@@ -32,7 +32,7 @@ npm install osmotic osmotic-plugin-playwright playwright
 npx playwright install chromium
 ```
 
-`osmotic` (2.1.0 or later) and `playwright` are peer dependencies, so install them
+`osmotic` (version 2 or 3) and `playwright` are peer dependencies, so install them
 alongside the plugin. The second command downloads the browser.
 
 ## Usage
