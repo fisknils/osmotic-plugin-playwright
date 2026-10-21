@@ -10,6 +10,11 @@
 
    > also, create a remote using gh
 
+3. Claude had created the public repository, pushed `master`, and noted that the "Pull requests" section was left out
+   because there was no CI workflow or branch protection yet.
+
+   > Can you set up the protection on master via gh?
+
 ## Interpretation
 
 `osmotic`'s CLAUDE.md has moved on since this repo's copy was made. Bring the changes over where they fit this repo:
@@ -22,8 +27,12 @@
 
 Also create a GitHub repository `fisknils/osmotic-plugin-playwright` with `gh`, add it as `origin` and push `master`.
 
-Left out: the "Pull requests" section and the `gh pr merge --delete-branch` note. This repo has no
-`.github/workflows/test.yml` and no branch protection, so that section would describe a setup that doesn't exist.
+Protect `master` the way `fisknils/osmotic` is protected: a pull request is required with no approvals, the checks
+`Node.js 22`, `Node.js 24` and `Formatting` must pass on an up-to-date branch, admins are included, and force pushes and
+deletion are blocked. Those checks need a workflow, so add osmotic's `.github/workflows/test.yml`, with a step that
+installs Chromium for Playwright. With all that in place, bring over osmotic's "Pull requests" section and the
+`gh pr merge --delete-branch` note too. Since `master` is protected from now on, this branch is merged through a pull
+request.
 
 ## Type
 
