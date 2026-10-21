@@ -123,6 +123,18 @@ GitHub doesn't let authors approve their own pull requests.
 If `master` moved on meanwhile, rebase the branch onto it and push with `git push --force-with-lease`. Force pushes are
 fine on your own branch, never on `master`.
 
+## Changes in osmotic
+
+When work here needs a change in osmotic itself, such as a new hook in its plugin API, request it with an issue on
+[fisknils/osmotic](https://github.com/fisknils/osmotic). Don't change osmotic from this repo's branch, and don't work
+around the missing feature here without saying so.
+
+1. Open the issue with `gh issue create --repo fisknils/osmotic`. Say what this plugin needs and why, what it can't do
+   with the current API, and a proposed API if there is one. A reader of the issue should understand it without this
+   repo's `PLAN.md`.
+2. Link the issue in `PLAN.md`: under Decisions if the branch waits for it, under Follow-ups if it doesn't.
+3. Depend on the change only once it is released, and raise the `osmotic` peer and dev dependencies to that version.
+
 ## Before merging to master
 
 - Every acceptance criterion in `PLAN.md` is ticked off, or the plan says why it was dropped.
