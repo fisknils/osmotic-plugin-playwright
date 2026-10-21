@@ -46,23 +46,23 @@ Out:
 
 ## Acceptance criteria
 
-- [ ] Content built by a page's scripts is visible to `set()`.
-- [ ] `render(false)` fetches the pages after it without the browser.
-- [ ] With `renderAll: false`, only pages loaded after a `render()` step are rendered.
-- [ ] `waitFor` waits for content that appears after the load event.
-- [ ] `actions` runs before the HTML is captured.
-- [ ] Render options apply to the pages loaded after the step, including those loaded by `follow()`.
-- [ ] `block` keeps matching resource types from loading.
-- [ ] The `page` event reports the URL after redirects, and links resolve against it.
-- [ ] Non-2xx responses are skipped with reason `status`, without waiting for `waitFor`.
-- [ ] Non-HTML responses are skipped with reason `contentType`.
-- [ ] A navigation or `waitFor` timeout is reported as an `error` event.
-- [ ] osmotic's `userAgent` and `headers` are sent by the browser.
-- [ ] Concurrent runs share one browser, and it is closed after the last one ends.
-- [ ] `require` and `import` of the build return the same plugin function, which `plugins()` accepts directly.
-- [ ] TypeScript callers get `render()` on `Osmotic` and the options types, from both entry points (`test-d/`).
-- [ ] Per-slot proxies reach the browser context. Not covered by an automated test: it needs a proxy server. Checked by
-      reading the code path; see Verification.
+- [x] Content built by a page's scripts is visible to `set()`.
+- [x] `render(false)` fetches the pages after it without the browser.
+- [x] With `renderAll: false`, only pages loaded after a `render()` step are rendered.
+- [x] `waitFor` waits for content that appears after the load event.
+- [x] `actions` runs before the HTML is captured.
+- [x] Render options apply to the pages loaded after the step, including those loaded by `follow()`.
+- [x] `block` keeps matching resource types from loading.
+- [x] The `page` event reports the URL after redirects, and links resolve against it.
+- [x] Non-2xx responses are skipped with reason `status`, without waiting for `waitFor`.
+- [x] Non-HTML responses are skipped with reason `contentType`.
+- [x] A navigation or `waitFor` timeout is reported as an `error` event.
+- [x] osmotic's `userAgent` and `headers` are sent by the browser.
+- [x] Concurrent runs share one browser, and it is closed after the last one ends.
+- [x] `require` and `import` of the build return the same plugin function, which `plugins()` accepts directly.
+- [x] TypeScript callers get `render()` on `Osmotic` and the options types, from both entry points (`test-d/`).
+- [x] Per-slot proxies reach the browser context. Not covered by an automated test: Chromium sends requests to loopback
+      addresses directly, past the proxy, so a local test site can't observe it. See Verification.
 
 ## Affected public API
 
@@ -97,6 +97,20 @@ Out:
 - The build goes to `dist/` instead of `distribution/` (prompt 3); CLAUDE.md is updated to match.
 
 ## Verification
+
+- `npm test` passes: 15 runtime tests in `test/` (`render.ts`, `render-all.ts`, `responses.ts`, `osmotic-options.ts`,
+  `browser.ts`, `package.ts`) and the type tests in `test-d/` (`render.ts`, `plugin.ts`, `esm.mts`). Each acceptance
+  criterion has a test named after it, except the proxy one.
+- Before the code was committed, the tests were run with `src/` moved aside: the type check failed on the missing
+  module and `render()`, and every runtime test file failed.
+- The built declarations were checked by hand: `dist/index.d.cts` and `dist/index.d.mts` both import
+  `dist/types/options.d.ts`, which holds the `declare module 'osmotic'` block for `render()`.
+- `examples/quotes.js` and `examples/actions.js` were run against quotes.toscrape.com/js, whose quotes only exist after
+  its scripts run, and printed the quotes.
+- Proxies, unchecked at runtime. To check by hand: run a local HTTP proxy on port 8888, load the plugin, run
+  `Osmotic.get('https://example.com').config({ slots: [{ proxy: 'http://127.0.0.1:8888' }] })`, and see the request in
+  the proxy's log. In the code, `BrowserPool.render()` passes `req.slot.proxy` to `context()`, which sets the
+  context's `proxy` from `proxyServer()`.
 
 ## Follow-ups
 
