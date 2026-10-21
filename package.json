@@ -1,6 +1,6 @@
 {
 	"name": "osmotic-plugin-playwright",
-	"version": "1.0.0",
+	"version": "1.0.2",
 	"description": "osmotic plugin that renders pages in a real browser with Playwright, so content built by JavaScript can be scraped",
 	"keywords": [
 		"osmotic-plugin",
@@ -35,7 +35,7 @@
 		"format:check": "prettier --check ."
 	},
 	"peerDependencies": {
-		"osmotic": "^2.1.0",
+		"osmotic": "^2.0.0 || ^3.0.0",
 		"playwright": "^1.40.0"
 	},
 	"devDependencies": {
