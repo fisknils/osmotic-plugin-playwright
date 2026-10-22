@@ -4,6 +4,23 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] - 2026-10-22
+
+### Added
+
+- Fetch middleware loaded before the plugin sees the page's real response headers (each `set-cookie` separately),
+  minus those that describe the original body (`content-length`, `content-encoding`, `transfer-encoding`).
+- Render option `passThrough: ({ url, status, headers }) => boolean`: matching responses are returned right away with
+  the server's raw body and headers, without waiting for the page to load, `waitFor` or `actions`, for middleware in
+  front that handles them itself. Type `PassThroughResponse` is exported.
+
+### Changed
+
+- A `Cookie` request header is set as browser cookies for the page's site, so it is sent to that site only, by the page
+  and its own requests, instead of to every site as an extra header.
+- `timeout` applies to the response and to `waitUntil` separately.
+- Non-2xx and non-HTML responses are returned as soon as the response arrives, instead of after `load`.
+
 ## [1.0.2] - 2026-10-21
 
 ### Changed

@@ -8,6 +8,7 @@ const options: playwright.PlaywrightPluginOptions = {
 	launch: { headless: false },
 	context: { locale: 'sv-SE' },
 	block: ['image'],
+	passThrough: (res: playwright.PassThroughResponse) => res.headers['x-a'] === '1',
 };
 
 // Loaded as is, or called with options

@@ -5,6 +5,7 @@ import { defaultBrowserType } from '../utils/default-browser-type.js';
 import { lowercaseKeys } from '../utils/lowercase-keys.js';
 import { pageResponse } from '../utils/page-response.js';
 import { proxyServer } from '../utils/proxy-server.js';
+import { requestCookies } from '../utils/request-cookies.js';
 
 // A launched browser and its contexts, one per proxy and user agent
 interface Session {
@@ -35,9 +36,11 @@ export class BrowserPool {
 
 	// Load req.url in a new page and return the rendered HTML as a Response
 	async render(req: FetchRequest, options: RenderOptions): Promise<Response> {
-		const { 'user-agent': userAgent, ...headers } = lowercaseKeys(req.headers);
+		const { 'user-agent': userAgent, cookie, ...headers } = lowercaseKeys(req.headers);
 		const session = await this.launched();
 		const context = await this.context(session, req.slot.proxy, userAgent);
+		// Cookies, unlike a header, go only to the page's site
+		if (cookie) await context.addCookies(requestCookies(cookie, req.url));
 		const page = await context.newPage();
 		try {
 			if (Object.keys(headers).length) await page.setExtraHTTPHeaders(headers);
@@ -47,18 +50,26 @@ export class BrowserPool {
 					block.includes(route.request().resourceType()) ? route.abort() : route.continue(),
 				);
 			}
-			const res = await page.goto(req.url, { waitUntil: options.waitUntil ?? 'load', timeout: options.timeout });
+			// Stop at the response first, so its headers are known before the page's scripts run
+			const res = await page.goto(req.url, { waitUntil: 'commit', timeout: options.timeout });
 			const status = res?.status() ?? 200;
 			const type = res?.headers()['content-type'] ?? 'text/html';
+			const resHeaders = (await res?.headersArray()) ?? [];
+			// For middleware in front, as sent, before the page's scripts can act on it
+			if (res && options.passThrough?.({ url: page.url(), status, headers: res.headers() })) {
+				return pageResponse(await res.text(), status, type, page.url(), resHeaders);
+			}
 			// osmotic skips these anyway, so don't wait for content that won't come
 			if (status < 200 || status > 299 || !type.includes('html')) {
-				return pageResponse(null, status, type, page.url());
+				return pageResponse(null, status, type, page.url(), resHeaders);
 			}
+			const waitUntil = options.waitUntil ?? 'load';
+			if (waitUntil !== 'commit') await page.waitForLoadState(waitUntil, { timeout: options.timeout });
 			if (options.waitFor) {
 				await page.waitForSelector(options.waitFor, { state: 'attached', timeout: options.timeout });
 			}
 			await options.actions?.(page, req.url);
-			return pageResponse(await page.content(), status, type, page.url());
+			return pageResponse(await page.content(), status, type, page.url(), resHeaders);
 		} finally {
 			await page.close().catch(() => {});
 		}
