@@ -31,7 +31,7 @@ export interface RenderOptions {
 	/** Wait until an element matching this selector is in the page. */
 	waitFor?: string;
 	/**
-	 * Milliseconds to allow for navigation and for `waitFor`.
+	 * Milliseconds to allow for the response, for `waitUntil` and for `waitFor`, each.
 	 * @defaultValue Playwright's default, `30000`
 	 */
 	timeout?: number;
