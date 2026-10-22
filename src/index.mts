@@ -2,4 +2,4 @@
 import playwright from './index.cjs';
 
 export default playwright;
-export type { PlaywrightPluginOptions, RenderOptions } from './types/options.js';
+export type { PassThroughResponse, PlaywrightPluginOptions, RenderOptions } from './types/options.js';

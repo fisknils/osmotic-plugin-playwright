@@ -18,6 +18,7 @@ function playwright(options?: options.PlaywrightPluginOptions): OsmoticPlugin {
 namespace playwright {
 	export type PlaywrightPluginOptions = options.PlaywrightPluginOptions;
 	export type RenderOptions = options.RenderOptions;
+	export type PassThroughResponse = options.PassThroughResponse;
 }
 
 // module.exports is the function itself, so require() can pass it straight to plugins()

@@ -7,9 +7,6 @@ import { pageResponse } from '../utils/page-response.js';
 import { proxyServer } from '../utils/proxy-server.js';
 import { requestCookies } from '../utils/request-cookies.js';
 
-// The header AWS WAF sends with a challenge or captcha instead of the page
-const WAF_ACTION = 'x-amzn-waf-action';
-
 // A launched browser and its contexts, one per proxy and user agent
 interface Session {
 	browser: Browser;
@@ -58,9 +55,8 @@ export class BrowserPool {
 			const status = res?.status() ?? 200;
 			const type = res?.headers()['content-type'] ?? 'text/html';
 			const resHeaders = (await res?.headersArray()) ?? [];
-			// An AWS WAF challenge or captcha, for middleware in front to solve. Its own
-			// script would reload the page, so return the body as sent, right away.
-			if (res?.headers()[WAF_ACTION]) {
+			// For middleware in front, as sent, before the page's scripts can act on it
+			if (res && options.passThrough?.({ url: page.url(), status, headers: res.headers() })) {
 				return pageResponse(await res.text(), status, type, page.url(), resHeaders);
 			}
 			// osmotic skips these anyway, so don't wait for content that won't come
