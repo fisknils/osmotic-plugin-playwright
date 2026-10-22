@@ -62,11 +62,33 @@ The plugin adds fetch middleware. Instead of making the HTTP request, it opens t
 in a new browser page, waits for it to load, and gives osmotic the rendered HTML
 (`page.content()`) as the response. osmotic then parses it as usual.
 
-The response keeps the page's real status and `Content-Type`, so non-2xx pages and
-non-HTML responses are skipped as before, and the `page` event reports the URL after
-redirects. Navigation errors and timeouts are reported as `error` events.
+The response keeps the page's real status and headers, so non-2xx pages and non-HTML
+responses are skipped as before, and the `page` event reports the URL after redirects.
+Headers that describe the original body, such as `Content-Length` and
+`Content-Encoding`, are left out, since the body is the rendered HTML. Navigation errors
+and timeouts are reported as `error` events.
 
 `robots.txt` is still fetched directly, without the browser.
+
+### Middleware in front of the plugin
+
+The plugin makes the request itself and doesn't call `next()`, so fetch middleware loaded
+after it never runs. Middleware that needs to see or change requests, such as
+[osmotic-plugin-awswaf-solver](https://github.com/fisknils/osmotic-plugin-awswaf-solver),
+must come before it: load that plugin first, or add it with the chain's `useFetch()`.
+
+- Headers it adds are sent by the browser. A `Cookie` header is set as cookies for the
+  page's site in the browser context, so the page's own requests to that site send them
+  too, and other sites don't.
+- It sees the page's response headers, `Set-Cookie` once per cookie.
+- An AWS WAF challenge or captcha (a response with `x-amzn-waf-action`) is returned right
+  away with the body the server sent, without waiting for the page to load, `waitFor` or
+  `actions`, so the middleware can solve it before the challenge's own script reloads
+  the page.
+
+```js
+Osmotic.plugins([require('osmotic-plugin-awswaf-solver'), require('osmotic-plugin-playwright')]);
+```
 
 ## Commands
 
@@ -109,7 +131,7 @@ These can be set when loading the plugin, as defaults for every page, and with
 | ----------- | -------- | ------------------------------------------------------------------------------------------ |
 | `waitUntil` | `'load'` | When navigation is done: `'load'`, `'domcontentloaded'`, `'networkidle'` or `'commit'`.    |
 | `waitFor`   | none     | Wait until an element matching this selector is in the page.                               |
-| `timeout`   | `30000`  | Milliseconds for navigation, and again for `waitFor`.                                      |
+| `timeout`   | `30000`  | Milliseconds for the response, again for `waitUntil`, and again for `waitFor`.             |
 | `block`     | `[]`     | Resource types to abort, such as `'image'`, `'font'`, `'media'` or `'stylesheet'`.         |
 | `actions`   | none     | `async (page, url) => {}`, run before the HTML is captured. `page` is Playwright's `Page`. |
 
@@ -157,7 +179,7 @@ Osmotic.plugins([
 | osmotic option         | In the browser                                                              |
 | ---------------------- | --------------------------------------------------------------------------- |
 | `userAgent`            | The context's user agent, so `navigator.userAgent` matches the header.      |
-| `headers`              | Sent with every request the page makes, including scripts and images.       |
+| `headers`              | Sent with every request the page makes. `Cookie` goes to the page's site.   |
 | `slots[].proxy`        | The context's proxy. Credentials in the URL (`http://user:pass@host`) work. |
 | `concurrency`, `slots` | One browser page per slot at most, so they limit open pages too.            |
 | `delay`, `maxPages`    | As before: they apply to page loads, not to the requests a page makes.      |
