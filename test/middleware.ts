@@ -78,9 +78,7 @@ test('a Cookie header from middleware in front is a cookie for the page site onl
 
 test('a 2xx AWS WAF response is returned with its raw body, without waiting for waitFor', async () => {
 	const seen: Seen[] = [];
-	const chain = recording(new Osmotic(), seen)
-		.render({ waitFor: '.never', timeout: 5000 })
-		.get(site.url('/challenge'));
+	const chain = recording(new Osmotic(), seen).render({ waitFor: '.never', timeout: 5000 }).get(site.url('/challenge'));
 	const started = Date.now();
 	const { errors } = await runChain(chain);
 	assert.deepEqual(errors, []);
