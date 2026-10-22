@@ -10,7 +10,8 @@ export type SitePage =
 			/** `Content-Type` header. @defaultValue `'text/html'` */
 			type?: string;
 			body?: string;
-			headers?: Record<string, string>;
+			/** Response headers; an array sends the header once per value. */
+			headers?: Record<string, string | string[]>;
 			/** Redirect to this path or URL. */
 			redirect?: string;
 	  };
