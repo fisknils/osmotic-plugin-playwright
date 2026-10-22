@@ -89,15 +89,15 @@ Out:
 - [x] `content-length` from the server isn't copied to the rendered response.
 - [x] A `Cookie` header added by middleware in front of the plugin reaches the server as a cookie on the page request
       and on a request the page's script makes to the same site, and not on a request to another site.
-- [ ] A 2xx response that `passThrough` matches is returned with the server's raw body (not the DOM after its scripts
+- [x] A 2xx response that `passThrough` matches is returned with the server's raw body (not the DOM after its scripts
       ran) and without waiting for `waitFor`.
-- [ ] A non-2xx response that `passThrough` matches is returned with its body and headers.
-- [ ] `passThrough` is called with the response's URL, status, and headers with lowercase names.
-- [ ] Without `passThrough`, a response with `x-amzn-waf-action` is rendered like any other page: the plugin has no
+- [x] A non-2xx response that `passThrough` matches is returned with its body and headers.
+- [x] `passThrough` is called with the response's URL, status, and headers with lowercase names.
+- [x] Without `passThrough`, a response with `x-amzn-waf-action` is rendered like any other page: the plugin has no
       vendor-specific handling.
-- [ ] Pages `passThrough` doesn't match still wait for `waitUntil` and `waitFor` as before (covered by the existing
+- [x] Pages `passThrough` doesn't match still wait for `waitUntil` and `waitFor` as before (covered by the existing
       tests in `render.ts` and `responses.ts`).
-- [ ] `passThrough` is accepted as a plugin option and by `render()`, and its argument is typed (`test-d/`).
+- [x] `passThrough` is accepted as a plugin option and by `render()`, and its argument is typed (`test-d/`).
 
 ## Affected public API
 
@@ -111,7 +111,9 @@ Out:
 - Checked: callers of `pageResponse()` (only `BrowserPool.render()`); every use of the request headers in
   `BrowserPool` (`setExtraHTTPHeaders`, the context key on proxy and user agent); the `timeout` option's doc comment
   and README row; the README sections on how the plugin works and on osmotic options in the browser; `examples/`; the
-  existing tests, all of which pass unchanged.
+  existing tests, all of which pass unchanged. For `passThrough`: how plugin options reach render settings
+  (`plugin.ts` spreads them into the defaults, so it works as a plugin option without changes there), both entry
+  points' type exports, and a search of `src/`, `README.md` and `CHANGELOG.md` for `waf`, which finds nothing.
 - Found:
   - A `Cookie` in osmotic's `headers` option was sent to every site the page loaded from; it now goes only to the
     page's site, and is stored in the shared context, so later pages with the same proxy and user agent send it too,
@@ -142,14 +144,17 @@ Out:
 
 ## Verification
 
-- `npm test`: every test passes, the five new ones in `test/middleware.ts` included. Before the code, four of them
-  failed and the `content-length` one passed (see Decisions).
+- `npm test`: all 22 tests pass, the seven in `test/middleware.ts` included, and the type tests in `test-d/` compile.
+  Before the header and cookie code, three of the first five failed and the `content-length` one passed (see
+  Decisions); before the `passThrough` code, its four tests failed and the type tests didn't compile.
 - `npx prettier --check .` passes.
 - Against imdb.com, by hand, since tests don't use real sites: a chain loading osmotic-plugin-awswaf-solver and then
-  this plugin's build, with a Chrome user agent and `respectRobots: false`, fetched `/interest/all/` with status 200
-  and the rendered page's links. Without the solver in front, the same chain got AWS WAF's challenge page, and
-  headless Chromium solving it by itself was answered with a captcha.
+  this plugin's build with `passThrough: (res) => 'x-amzn-waf-action' in res.headers`, with a Chrome user agent and
+  `respectRobots: false`, fetched `/interest/all/` with status 200 and 728 links from the rendered page. Without the
+  solver in front, the same chain got AWS WAF's challenge page, and headless Chromium solving it by itself was
+  answered with a captcha.
 
 ## Follow-ups
 
-- osmotic-plugin-awswaf-solver: document loading it before this plugin, and add an integration test with both.
+- osmotic-plugin-awswaf-solver: document loading it before this plugin with the `passThrough` setting above (needs
+  this release, 1.1.0), and add an integration test with both.
