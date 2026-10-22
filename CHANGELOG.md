@@ -8,11 +8,11 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
-- Fetch middleware loaded before the plugin, such as an AWS WAF solver, sees the page's real response headers
-  (each `set-cookie` separately), minus those that describe the original body (`content-length`,
-  `content-encoding`, `transfer-encoding`).
-- A response with `x-amzn-waf-action` (an AWS WAF challenge or captcha) is returned right away with the server's raw
-  body and headers, without waiting for the page to load, `waitFor` or `actions`.
+- Fetch middleware loaded before the plugin sees the page's real response headers (each `set-cookie` separately),
+  minus those that describe the original body (`content-length`, `content-encoding`, `transfer-encoding`).
+- Render option `passThrough: ({ url, status, headers }) => boolean`: matching responses are returned right away with
+  the server's raw body and headers, without waiting for the page to load, `waitFor` or `actions`, for middleware in
+  front that handles them itself. Type `PassThroughResponse` is exported.
 
 ### Changed
 

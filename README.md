@@ -73,21 +73,23 @@ and timeouts are reported as `error` events.
 ### Middleware in front of the plugin
 
 The plugin makes the request itself and doesn't call `next()`, so fetch middleware loaded
-after it never runs. Middleware that needs to see or change requests, such as
-[osmotic-plugin-awswaf-solver](https://github.com/fisknils/osmotic-plugin-awswaf-solver),
-must come before it: load that plugin first, or add it with the chain's `useFetch()`.
+after it never runs. Middleware that needs to see or change requests must come before
+it: load its plugin first, or add it with the chain's `useFetch()`.
 
 - Headers it adds are sent by the browser. A `Cookie` header is set as cookies for the
   page's site in the browser context, so the page's own requests to that site send them
   too, and other sites don't.
 - It sees the page's response headers, `Set-Cookie` once per cookie.
-- An AWS WAF challenge or captcha (a response with `x-amzn-waf-action`) is returned right
-  away with the body the server sent, without waiting for the page to load, `waitFor` or
-  `actions`, so the middleware can solve it before the challenge's own script reloads
-  the page.
+- Responses it handles itself, such as a challenge it solves, can be returned to it
+  unrendered with [`passThrough`](#render-options).
 
 ```js
-Osmotic.plugins([require('osmotic-plugin-awswaf-solver'), require('osmotic-plugin-playwright')]);
+Osmotic.plugins([
+	require('some-middleware-plugin'),
+	require('osmotic-plugin-playwright')({
+		passThrough: (res) => res.headers['x-challenge'] === '1',
+	}),
+]);
 ```
 
 ## Commands
@@ -127,15 +129,19 @@ Fetches the pages loaded after this step without the browser, as plain osmotic w
 These can be set when loading the plugin, as defaults for every page, and with
 `render()`.
 
-| Option      | Default  | Description                                                                                |
-| ----------- | -------- | ------------------------------------------------------------------------------------------ |
-| `waitUntil` | `'load'` | When navigation is done: `'load'`, `'domcontentloaded'`, `'networkidle'` or `'commit'`.    |
-| `waitFor`   | none     | Wait until an element matching this selector is in the page.                               |
-| `timeout`   | `30000`  | Milliseconds for the response, again for `waitUntil`, and again for `waitFor`.             |
-| `block`     | `[]`     | Resource types to abort, such as `'image'`, `'font'`, `'media'` or `'stylesheet'`.         |
-| `actions`   | none     | `async (page, url) => {}`, run before the HTML is captured. `page` is Playwright's `Page`. |
+| Option        | Default  | Description                                                                                   |
+| ------------- | -------- | --------------------------------------------------------------------------------------------- |
+| `waitUntil`   | `'load'` | When navigation is done: `'load'`, `'domcontentloaded'`, `'networkidle'` or `'commit'`.       |
+| `waitFor`     | none     | Wait until an element matching this selector is in the page.                                  |
+| `timeout`     | `30000`  | Milliseconds for the response, again for `waitUntil`, and again for `waitFor`.                |
+| `block`       | `[]`     | Resource types to abort, such as `'image'`, `'font'`, `'media'` or `'stylesheet'`.            |
+| `actions`     | none     | `async (page, url) => {}`, run before the HTML is captured. `page` is Playwright's `Page`.    |
+| `passThrough` | none     | `({ url, status, headers }) => boolean`. Matching responses are returned as sent, unrendered. |
 
-`waitFor` and `actions` only run for 2xx HTML responses. `waitFor` takes a Playwright
+`waitFor` and `actions` only run for 2xx HTML responses. A response `passThrough` matches
+is returned as soon as it arrives, with the server's body and headers, whatever its
+status: no `waitUntil`, `waitFor` or `actions`, and the page's scripts don't get to change
+it. `headers` has lowercase names. `waitFor` takes a Playwright
 selector, so besides CSS it also accepts forms like `text=Next`. osmotic's own selector
 extras, such as `:text-is()`, are not available there.
 
