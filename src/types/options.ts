@@ -78,8 +78,9 @@ export interface PlaywrightPluginOptions extends RenderOptions {
 	 */
 	browserType?: BrowserType;
 	/**
-	 * Options for launching the browser.
-	 * @defaultValue `{ headless: true }`
+	 * Options for launching the browser. Chromium runs with its sandbox, unlike Playwright's own default; pass
+	 * `chromiumSandbox: false` where the sandbox can't start, such as in Docker as root.
+	 * @defaultValue `{ headless: true, chromiumSandbox: true }`
 	 */
 	launch?: LaunchOptions;
 	/**
