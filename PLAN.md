@@ -26,9 +26,11 @@ Feature
 
 ## Breaking change
 
-Yes. Where Chromium's sandbox can't start, such as in Docker containers running as root or on Linux hosts that block
-unprivileged user namespaces, the browser fails to launch and rendered pages fail. To migrate, pass
-`launch: { chromiumSandbox: false }`, or better, run as a non-root user with a seccomp profile that allows the sandbox.
+Yes. Where Chromium's sandbox can't start, the browser fails to launch and rendered pages fail. That includes plain
+Ubuntu 23.10+ hosts and GitHub Actions' `ubuntu-latest`, whose AppArmor blocks unprivileged user namespaces, and Docker
+containers running as root or with Docker's default seccomp profile. To migrate, allow the sandbox (an AppArmor profile
+or `kernel.apparmor_restrict_unprivileged_userns=0`; in Docker a non-root user and a seccomp profile that allows it),
+or pass `launch: { chromiumSandbox: false }`.
 
 ## Version bump
 
@@ -58,8 +60,10 @@ Major (2.0.0)
 - Checked: `BrowserPool.launch()`, the only place the browser is launched; every test that launches a browser
   (`test/*.ts`, all through the default or a wrapped `chromium`); the README's options table and "The browser" section;
   the `launch` TSDoc in `src/types/options.ts`; the CI workflow, which runs Chromium on `ubuntu-latest`.
-- Found: every test now launches with the sandbox, so CI on `ubuntu-latest` must be able to run it. If the runner
-  can't, the fix is in the runner setup, not turning the sandbox off in tests.
+- Found: every test now launches with the sandbox, so CI on `ubuntu-latest` must be able to run it. It couldn't: the
+  first CI run failed every rendering test with `No usable sandbox!`, because Ubuntu 24.04's AppArmor blocks
+  unprivileged user namespaces. The workflow now allows them before `npm test`. The same applies to users on Ubuntu
+  23.10+ hosts, not only Docker, so the README covers both.
 
 ## Decisions
 
@@ -67,6 +71,10 @@ Major (2.0.0)
 - The opt-out test (`test/sandbox-disabled.ts`) passes before the change, since user `launch` options already win. It is
   kept as a guard that the new default never overrides a user's `chromiumSandbox: false`. The default test
   (`test/sandbox.ts`) is the one that fails first.
+- CI enables the sandbox with `sysctl -w kernel.apparmor_restrict_unprivileged_userns=0` on the runner, instead of
+  passing `chromiumSandbox: false` in tests. That would test a setup users don't get by default. The runner is
+  throwaway, so a machine-wide setting is fine there; the README recommends a Chromium-only AppArmor profile for real
+  hosts.
 
 ## Verification
 
