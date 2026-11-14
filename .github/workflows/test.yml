@@ -6,7 +6,6 @@ on:
     branches: [master]
 
 jobs:
-
   format:
     name: Formatting
     runs-on: ubuntu-latest
