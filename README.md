@@ -214,24 +214,31 @@ A crawler runs JavaScript from whatever sites it visits. Chromium runs each page
 exploits a bug in the browser still can't reach your files or run programs. Playwright turns this sandbox off by
 default because it is a testing tool. This plugin turns it back on.
 
-The sandbox can fail to start in some Linux setups, most often in Docker, and the browser then fails to launch with an
-error such as `No usable sandbox!` or `Running as root without --no-sandbox is not supported`. In order of preference:
+The sandbox can fail to start on Linux, and the browser then fails to launch with an error such as
+`No usable sandbox!` or `Running as root without --no-sandbox is not supported`. Windows and macOS need nothing.
 
-1. Run the container as a non-root user. Playwright's own Docker images have one (`pwuser`):
+- **Ubuntu 23.10 and later** (including GitHub Actions' `ubuntu-latest`) block the unprivileged user namespaces the
+  sandbox uses, through AppArmor. Allow them for Chromium with an AppArmor profile, as
+  [Chromium describes](https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md),
+  or for the whole machine, e.g. on a CI runner:
 
-   ```sh
-   docker run --user pwuser --security-opt seccomp=seccomp_profile.json ...
-   ```
+  ```sh
+  sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+  ```
 
-   The default seccomp profile blocks the system calls the sandbox needs, so pass one that allows them, such as
-   [Playwright's](https://playwright.dev/docs/docker). Some hosts also block unprivileged user namespaces, e.g. Ubuntu
-   23.10 and later via AppArmor.
+- **Docker**: run the container as a non-root user, such as `pwuser` in Playwright's images, with a seccomp profile that
+  allows the sandbox's system calls, such as [Playwright's](https://playwright.dev/docs/docker). Docker's default
+  profile blocks them:
 
-2. If that isn't possible, turn the sandbox off, and keep the container itself isolated:
+  ```sh
+  docker run --user pwuser --security-opt seccomp=seccomp_profile.json ...
+  ```
 
-   ```js
-   playwright({ launch: { chromiumSandbox: false } });
-   ```
+- If neither is possible, turn the sandbox off, and keep the machine or container itself isolated:
+
+  ```js
+  playwright({ launch: { chromiumSandbox: false } });
+  ```
 
 Keep `playwright` up to date either way. Each release ships its own Chromium, so an old Playwright means an old browser
 with known security bugs, sandbox or not.
