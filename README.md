@@ -160,12 +160,12 @@ extras, such as `:text-is()`, are not available there.
 
 The plugin's own options, alongside the [render options](#render-options):
 
-| Option        | Default                   | Description                                                                        |
-| ------------- | ------------------------- | ---------------------------------------------------------------------------------- |
-| `renderAll`   | `true`                    | Render every page. When `false`, only pages after a `render()` step are.           |
-| `browserType` | `chromium` (`playwright`) | The browser to launch, e.g. `firefox` or `webkit`, or one from `playwright-extra`. |
-| `launch`      | `{ headless: true }`      | Playwright launch options, e.g. `{ headless: false, slowMo: 250 }`.                |
-| `context`     | `{}`                      | Playwright browser context options, e.g. `viewport`, `locale` or `timezoneId`.     |
+| Option        | Default                                     | Description                                                                                          |
+| ------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `renderAll`   | `true`                                      | Render every page. When `false`, only pages after a `render()` step are.                             |
+| `browserType` | `chromium` (`playwright`)                   | The browser to launch, e.g. `firefox` or `webkit`, or one from `playwright-extra`.                   |
+| `launch`      | `{ headless: true, chromiumSandbox: true }` | Playwright launch options, e.g. `{ headless: false, slowMo: 250 }`. See [the sandbox](#the-sandbox). |
+| `context`     | `{}`                                        | Playwright browser context options, e.g. `viewport`, `locale` or `timezoneId`.                       |
 
 ```js
 const { firefox } = require('playwright');
@@ -207,6 +207,34 @@ finishes. If the browser crashes, the next request launches a new one.
 Rendering is much slower than plain fetching, and every page uses memory in the browser.
 Keep `concurrency` modest, block resources you don't need, and use `renderAll: false`
 with `render()` when only some pages need JavaScript.
+
+## The sandbox
+
+A crawler runs JavaScript from whatever sites it visits. Chromium runs each page inside a sandbox, so a page that
+exploits a bug in the browser still can't reach your files or run programs. Playwright turns this sandbox off by
+default because it is a testing tool. This plugin turns it back on.
+
+The sandbox can fail to start in some Linux setups, most often in Docker, and the browser then fails to launch with an
+error such as `No usable sandbox!` or `Running as root without --no-sandbox is not supported`. In order of preference:
+
+1. Run the container as a non-root user. Playwright's own Docker images have one (`pwuser`):
+
+   ```sh
+   docker run --user pwuser --security-opt seccomp=seccomp_profile.json ...
+   ```
+
+   The default seccomp profile blocks the system calls the sandbox needs, so pass one that allows them, such as
+   [Playwright's](https://playwright.dev/docs/docker). Some hosts also block unprivileged user namespaces, e.g. Ubuntu
+   23.10 and later via AppArmor.
+
+2. If that isn't possible, turn the sandbox off, and keep the container itself isolated:
+
+   ```js
+   playwright({ launch: { chromiumSandbox: false } });
+   ```
+
+Keep `playwright` up to date either way. Each release ships its own Chromium, so an old Playwright means an old browser
+with known security bugs, sandbox or not.
 
 ## TypeScript
 
