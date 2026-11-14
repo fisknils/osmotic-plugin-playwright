@@ -89,7 +89,8 @@ export class BrowserPool {
 
 	private async launch(): Promise<Session> {
 		const browserType = this.opts.browserType ?? (await defaultBrowserType());
-		const browser = await browserType.launch({ headless: true, ...this.opts.launch });
+		// The sandbox keeps a compromised page from reaching the machine. Playwright turns it off by default.
+		const browser = await browserType.launch({ headless: true, chromiumSandbox: true, ...this.opts.launch });
 		return { browser, contexts: new Map() };
 	}
 
